@@ -76,6 +76,7 @@ let add_num n1 n2 =
 let n2 = Int(2)
 let f3 = Float(3.)
 
+(*option type can represent by using type 'a*)
 (*'a option type means either a value of type 'a or an absence of value*)
 type 'a option = Some of 'a | None
 let safe_square_root x = if x >= 0. then Some(sqrt x) else None;;
@@ -186,3 +187,113 @@ let rec eval env exp =
     
 let env1 = [("pi", 3.1); ("n", 5.0)]
 let form = Prod(Prod(Const 2.0, Var "pi"), Sum(Var "n", Const 3.0))
+
+(*exceptions*)
+
+exception Empty_list
+
+let head l = 
+  match l with
+  [] -> raise Empty_list
+  | hd :: tl -> hd
+
+(*List.assoc*)
+List.assoc 1 [(0, "zero"), (1, "one")]
+List.assoc 2 [(0, "zero"), (1, "one")]
+
+let name_of_binary_digit digit = 
+  try
+    List.assoc digit [0, "zero"; 1, "one"]
+  with Not_found ->
+    "not a binary digit"
+
+let rec first_named_value values names =
+  try
+    List.assoc (head values) names
+  with
+  | Empty_list -> "no named value"
+  | Not_found -> first_named_value (List.tl values) names
+
+(*finalization: i could not catch this.*)
+let temporarily_set_reference ref newval funct = 
+  let oldval = !ref in
+  try
+    ref := newval;
+    let res = funct () in
+    ref := oldval;
+    res
+  with x ->
+    ref := oldval;
+    raise x
+
+let assoc_may_map f x l =
+  match List.assoc x l with
+  | exception Not_found -> None
+  | y -> f y;;
+
+(* Some _ as v -> v can be replaced with v -> v*)
+let flat_assoc_opt x l =
+  match List.assoc x l with
+  | None | exception Not_found -> None
+  | Some _ as v -> v 
+  
+
+(*try with for imperative control (while loop)*)
+let fixpoint f x = 
+  let exception Done in 
+  let x = ref x in
+  try while true do
+    let y = f !x in
+    if abs_float (!x -. y) < 0.01  then raise Done else x := y
+    done; assert false
+  with Done -> !x
+  
+(*pretty-printing*)
+let print_expr exp = 
+  let open_paren prec op_prec = 
+    if prec > op_prec then print_string "(" in
+  let close_paren prec op_prec =
+    if prec > op_prec then print_string ")" in
+  let rec print prec exp = 
+    match exp with
+    Const c -> print_float c
+    | Var v -> print_string v
+    | Sum(f, g) ->
+        open_paren prec 0;
+        print 0 f; print_string " + " ;print 0 g;
+        close_paren prec 0
+    | Diff(f, g) ->
+        open_paren prec 0;
+        print 0 f; print_string " - " ;print 1 g;
+        close_paren prec 0
+    | Prod(f, g) ->
+        open_paren prec 2;
+        print 2 f; print_string " * " ;print 2 g;
+        close_paren prec 2
+    | Quot(f, g) ->
+        open_paren prec 2;
+        print 2 f; print_string " / " ;print 3 g;
+        close_paren prec 2
+  in print 0 exp
+  
+(*print formats*)
+
+(*%a is useful to make custom printer and compose complex printers*)
+(* I wonder why there is an sytax error in the code below*)
+(*
+let pp_int ppf n = Printf.fprintf ppf "%d" n
+let demo_print = Printf.printf "Outputting an integer using a custom printer: %a\n" pp_int 42;;
+*)
+
+(*standard ml programs*)
+
+let rec gcd a b =
+  if b = 0 then a
+  else gcd b (a mod b)
+
+let main () =
+  let a = int_of_string Sys.argv.(1) in
+  let b = int_of_string Sys.argv.(2) in
+  Printf.printf "%d\n" (gcd a b);
+  exit 0;;
+main ();;
