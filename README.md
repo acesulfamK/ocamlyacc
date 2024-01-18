@@ -22,3 +22,7 @@ lexbuf型の値の扱い方は[chap 26, Module Lexing](https://v2.ocaml.org/api/
 
 [chap 26, Module Lexing](https://v2.ocaml.org/api/Lexing.html)
 
+## ファイルの説明
+
+ex1_if_single_token.mll
+- 1つのtokenを処理する。数字と文字列ifを読み込める。
